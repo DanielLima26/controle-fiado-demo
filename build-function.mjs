@@ -1,0 +1,13 @@
+import {readFileSync,writeFileSync,readdirSync} from 'node:fs';
+import {gzipSync} from 'node:zlib';
+let source=readFileSync('server.mjs','utf8');
+source=source.replace("import http from 'node:http';",'').replace("import {DatabaseSync} from 'node:sqlite';","import {Database as DatabaseSync} from 'bun:sqlite';");
+source=source.replace("export const server=http.createServer(async(req,res)=>{",'async function handle(req,res){');
+const end=source.indexOf("if(process.env.NO_LISTEN!=='1')server.listen");source=source.slice(0,end);
+source=source.replace("reply(res,e.status||500,{error:e.status?e.message:'Não foi possível concluir. Tente novamente.'})}});","reply(res,e.status||500,{error:e.status?e.message:'Não foi possível concluir. Tente novamente.'})}}");
+source=source.replace("readFileSync(join(ROOT,'public',file[0]))","gunzipSync(Buffer.from(ASSETS[file[0]],'base64'))");
+const assets=Object.fromEntries(readdirSync('public').map(f=>[f,gzipSync(readFileSync('public/'+f)).toString('base64')]));
+source="import {gunzipSync} from 'node:zlib';\n"+source;
+source='// Controle de Fiado — Demonstração — self-contained hosted entrypoint. No plaintext credentials.\nconst ASSETS='+JSON.stringify(assets)+';\n'+source;
+source+=`\nexport function start(port=Number(process.env.PORT||3000)){return Bun.serve({port,hostname:'0.0.0.0',async fetch(request,bunServer){return await new Promise(async(resolve,reject)=>{const parsed=new URL(request.url);const req={url:parsed.pathname+parsed.search,method:request.method,headers:Object.fromEntries(request.headers),socket:{remoteAddress:bunServer.requestIP(request)?.address||'unknown'},async *[Symbol.asyncIterator](){if(request.body)for await(const chunk of request.body)yield Buffer.from(chunk)}};let status=200,headers={};const res={writeHead(code,values){status=code;headers=values},end(value){resolve(new Response(value,{status,headers}))}};try{await handle(req,res)}catch(e){reject(e)}})}})}\nif(process.env.NO_LISTEN!=='1')start();\n`;
+writeFileSync('railway-function.ts',source);
