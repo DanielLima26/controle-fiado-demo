@@ -1,0 +1,1 @@
+{"name": "Controle de Fiado — Demonstração", "short_name": "Fiado Demo", "start_url": "/", "display": "standalone", "background_color": "#ffffff", "theme_color": "#f4c542", "icons": [{"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]}
